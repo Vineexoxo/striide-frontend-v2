@@ -112,7 +112,7 @@ const SignUpForm = () => {
         } catch (error) {
           // log.error("An unexpected error occurred during form submission:", error);
 
-            setErrorMessage("An unexpected error occurred.");
+            setErrorMessage("Servers are busy, try later!");
             console.error(error);
         } finally {
           // log.info("Form submission process ended.");

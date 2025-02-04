@@ -227,7 +227,7 @@ const ReportForm: FC<ReportFormProps> = ({
         console.log(formData.buttonType);
 
         if (formData.buttonType === "discard") {
-            const response = await request(`http://localhost:3001/api/discard_draft`, {
+            const response = await request(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/discard_draft`, {
                 method: "POST",
                 headers: {
                     Accept: "*/*",
@@ -250,7 +250,7 @@ const ReportForm: FC<ReportFormProps> = ({
         }
 
         if (formData.buttonType === "submit" && isDraft) {
-            const response = await request(`http://localhost:3001/api/publish_draft`, {
+            const response = await request(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/publish_draft`, {
                 method: "POST",
                 headers: {
                     Accept: "*/*",
@@ -270,7 +270,7 @@ const ReportForm: FC<ReportFormProps> = ({
             return;
         }
 
-        const response = await request(`http://localhost:3001/api/upload_report`, {
+        const response = await request(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/upload_report`, {
             method: "POST",
             headers: {
                 Accept: "*/*",

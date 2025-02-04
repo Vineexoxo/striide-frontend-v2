@@ -24,7 +24,7 @@ interface AuthProviderProps {
 
 const refreshAccess = async (refreshToken: string) => {
     try {
-        const response = await fetch("http://localhost:3001/api/auth/refresh", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/refresh`, {
             method: "POST",
             body: JSON.stringify({ refresh_token: refreshToken }),  // Pass the refresh token
             headers: {
@@ -44,7 +44,7 @@ const refreshAccess = async (refreshToken: string) => {
 // Check if the session is valid on the frontend
 const checkSessionFrontend = async () => {
     try {
-        const response = await fetch("http://localhost:3001/api/auth/check-session", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/check-session`, {
             method: "GET",
         });
         const data = await response.json();
