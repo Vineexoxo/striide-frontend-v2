@@ -5,7 +5,7 @@ import { BASE_URL } from "@/lib/constants";
 export const POST = async (request: NextRequest) => {
 
     const body = await request.json();
-    const response = await fetch("http://localhost:3001/api/entry", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/entry`, {
         method: "POST",
         body: JSON.stringify(body), // Ensure the body is stringified here
 

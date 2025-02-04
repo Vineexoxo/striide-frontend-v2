@@ -35,7 +35,7 @@ const SavedDrafts: FC = ({ }) => {
     useEffect(() => {
         const checkUserAuthentication = async () => {
             try {
-                const response = await fetch('http://localhost:3001/api/get-user', {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/get-user`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
