@@ -5,7 +5,7 @@ import Feedback from "@/components/feedback/Feedback";
 import { checkAuthCookie } from "@/lib/check-auth";
 import { useRouter } from "next/navigation";
 
-const page = () => {
+const Page = () => {
     const router = useRouter();
 
     useEffect(() => {
@@ -32,4 +32,4 @@ const page = () => {
     return <Feedback />;
 };
 
-export default page;
+export default Page;
