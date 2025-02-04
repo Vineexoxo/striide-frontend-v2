@@ -38,7 +38,7 @@ const CheckEmailPage = () => {
                     Please Verify Your Email
                 </h1>
                 <p className="mb-6 text-gray-700">
-                    We've sent a verification link to your email. Please check
+                    We&apos;ve sent a verification link to your email. Please check
                     your inbox and click the link to verify your email address,
                     and then login in our website.
                 </p>
