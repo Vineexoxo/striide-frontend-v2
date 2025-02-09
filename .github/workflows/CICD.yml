@@ -1,0 +1,158 @@
+# name: CICD Pipeline
+
+# on:
+#   push:
+#     branches:
+#       - main # Trigger on push to main branch
+
+# jobs:
+
+#   initialise:
+#     runs-on: ubuntu-latest
+#     steps:
+#       # Step 1: Checkout the code from GitHub
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+#   s
+
+#   build_frontend:
+#     runs-on: ubuntu-latest
+#     needs: initialise
+
+#     steps:
+#         #check code
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       #login dockerhub
+#       - name: Login Dockerhub
+#         env:
+#           DOCKER_USERNAME: "${{ secrets.DOCKER_USERNAME }}" 
+#           DOCKER_PASSWORD: "${{ secrets.DOCKER_PASSWORD }}" 
+#         run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+
+#       # Step 5: Build Frontend Docker image
+#       - name: Build Frontend Docker image
+#         run: |
+#           cd striide-frontend
+#           docker build -t vineexoxo/striide-frontend:latest .
+
+#       # Step 6: Push Frontend Docker image to Dockerhub
+#       - name: Push striide-frontend to Dockerhub
+#         run: docker push vineexoxo/striide-frontend:latest
+
+#       # Step 7: Clean up Backend Docker image
+#       - name: Clean up Docker images
+#         run: |
+#           docker rmi vineexoxo/striide-frontend:latest || true
+
+
+#   deploy_frontend:
+#     needs: build_frontend
+#     runs-on: ubuntu-latest
+
+
+#     steps:
+#           # Step 1: Checkout Repository
+#       - name: Checkout Repository
+#         uses: actions/checkout@v3
+
+#       - name: Pull Frontend Docker Image
+#         run:  docker pull vineexoxo/striide-frontend:latest
+
+#       # Step 2: Delete old Frontend Docker Container (if exists)
+#       - name: Delete old Frontend Docker Container
+#         run: docker rm -f striide-frontend-container || true
+
+#       # Step 3: Run Frontend Docker Container
+#       - name: Run frontend Docker container
+#         env:
+#           NEXT_PUBLIC_MAPBOX_TOKEN: "${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}" 
+#           NEXT_PUBLIC_MAPBOX_MAP_STYLE: "${{ secrets.NEXT_PUBLIC_MAPBOX_MAP_STYLE }}" 
+#           NEXT_PUBLIC_API_URL: "${{ secrets.NEXT_PUBLIC_API_URL }}" 
+#           NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN: "${{ secrets.NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN }}" 
+#           NEXT_PUBLIC_BACKEND_URL: "${{ secrets.NEXT_PUBLIC_BACKEND_URL }}" 
+#         run: |
+#            docker run --rm -d \
+#             --name striide-frontend-container \
+#             -e NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN \
+#             -e NEXT_PUBLIC_MAPBOX_MAP_STYLE=$NEXT_PUBLIC_MAPBOX_MAP_STYLE \
+#             -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+#             -e NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN=$NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN \
+#             -e NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL \
+#             -p 3000:3000 \
+#             vineexoxo/striide-frontend:latest
+
+          
+name: Frontend CICD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY }}
+
+      - name: Build & Push Frontend Docker Image
+        run: |
+          docker build -t ${{ secrets.AWS_ECR_REGISTRY }}/striide-frontend:latest .
+          docker push ${{ secrets.AWS_ECR_REGISTRY }}/striide-frontend:latest
+          docker rmi ${{ secrets.AWS_ECR_REGISTRY }}/striide-frontend:latest || true
+
+  deploy:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REGISTRY }}
+
+      - name: Pull Frontend Docker Image
+        run: docker pull ${{ secrets.AWS_ECR_REGISTRY }}/striide-frontend:latest
+
+      - name: Remove Old Frontend Container
+        run: docker rm -f striide-frontend-container || true
+
+      - name: Run Frontend Container
+        env:
+          NEXT_PUBLIC_MAPBOX_TOKEN: "${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}"
+          NEXT_PUBLIC_MAPBOX_MAP_STYLE: "${{ secrets.NEXT_PUBLIC_MAPBOX_MAP_STYLE }}"
+          NEXT_PUBLIC_API_URL: "${{ secrets.NEXT_PUBLIC_API_URL }}"
+          NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN: "${{ secrets.NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN }}"
+          NEXT_PUBLIC_BACKEND_URL: "${{ secrets.NEXT_PUBLIC_BACKEND_URL }}"
+        run: |
+          docker run -d \
+            --name striide-frontend-container \
+            -e NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN \
+            -e NEXT_PUBLIC_MAPBOX_MAP_STYLE=$NEXT_PUBLIC_MAPBOX_MAP_STYLE \
+            -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+            -e NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN=$NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN \
+            -e NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL \
+            -p 3000:3000 \
+            ${{ secrets.AWS_ECR_REGISTRY }}/striide-frontend:latest

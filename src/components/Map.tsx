@@ -221,20 +221,28 @@ const Map: FC<MapProps> = ({
     }, [map, mapboxPath]);
 
     useEffect(() => {
-        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/open_businesses`).then((res) => {
-            res.json().then((data) => {
-                setOpenBuildings(data.body.ids);
-            });
-        });
-        const interval = setInterval(() => {
-            fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/open_businesses`).then((res) => {
-                res.json().then((data) => {
-                    setOpenBuildings(data.body.ids);
-                });
-            });
-        }, REFRESH_BUSINESS_INTERVAL);
+        const fetchData = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/open_businesses`);
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP error! Status: ${res.status}`);
+                }
+                
+                const data = await res.json();
+                setOpenBuildings(data.body?.ids || []);
+            } catch (error) {
+                console.error("Error fetching businesses:", error);
+            }
+        };
+    
+        fetchData(); // Initial fetch
+    
+        const interval = setInterval(fetchData, REFRESH_BUSINESS_INTERVAL);
+    
         return () => clearInterval(interval);
     }, []);
+    
 
     useEffect(() => {
         if (!map) return;
