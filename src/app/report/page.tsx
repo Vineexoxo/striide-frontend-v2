@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect } from "react";
-import Feedback from "@/components/feedback/Feedback";
+// import Feedback from "@/components/feedback/Feedback";
 import { checkAuthCookie } from "@/lib/check-auth";
 import { useRouter } from "next/navigation";
+// import Reports from "@/components/reports/Reports";
+import ReportForm from "@/components/reports/ReportsForm";
 
 const Page = () => {
     const router = useRouter();
@@ -29,7 +31,7 @@ const Page = () => {
         checkUserAuthentication();
     }, [router]);
 
-    return <Feedback />;
+    return <ReportForm />;
 };
 
 export default Page;
