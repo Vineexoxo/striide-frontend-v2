@@ -40,84 +40,56 @@ const SignUpForm = () => {
         try {
             const response = await fetch("https://api.ipify.org?format=json");
             const data = await response.json();
-          // log.debug("Fetched IP address:", data.ip);
             return data.ip;
         } catch (error) {
-          // log.error("Failed to fetch IP address:", error);
+            console.error("Failed to fetch IP address:", error);
             return null;
         }
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-      // log.info("Form submission started.");
         setIsLoading(true);
         setErrorMessage("");
 
-        // Input validation
         if (!username || !email || !password) {
-            // log.error("Form submission failed: Could not fetch IP address.");
-          // log.warn("Form submission failed: Missing required fields.");
             setErrorMessage("Please fill out all fields.");
             setIsLoading(false);
             return;
         }
-      
+
         try {
             const ipAddress = await getIpAddress();
             if (!ipAddress) {
                 setErrorMessage("Failed to fetch IP address.");
-              // log.error("Failed to fetch IP address.");
                 setIsLoading(false);
                 return;
             }
 
-            const payload = {
-                username,
-                email,
-                password,
-                ip: ipAddress,
-            };
-            // Send the payload to the `/api/auth/register` route
+            const payload = { username, email, password, ip: ipAddress };
+
             const response = await fetch("/api/auth/register", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
 
-            router.push("/check-email");
-
             const result = await response.json();
 
-          // log.info(`Form payload: ${JSON.stringify(payload, null, 2)}`)
-            // log.info('Sign Up button clicked on the Welcome page');
-            console.log("Payload:", JSON.stringify(payload, null, 2));  // For client-side debugging
-
-            
-    
-            if (!result.ok) {
-                if (result.status === 409) {
-                    // Handle the case where the email already exists
+            if (!response.ok) {
+                if (response.status === 409) {
                     setErrorMessage("Email already exists. Please log in.");
+                } else {
+                    setErrorMessage(result.message || "Signup failed.");
                 }
-                // If response status is not OK (i.e., error code is not 2xx)
-                // Use the error message from the response body
-      
             } else {
-                // Redirect to onboarding page on successful signup
-                
+                router.push("/check-email"); // Redirect only on success
             }
         } catch (error) {
-          // log.error("An unexpected error occurred during form submission:", error);
-
+            console.error("Signup error:", error);
             setErrorMessage("Servers are busy, try later!");
-            console.error(error);
         } finally {
-          // log.info("Form submission process ended.");
             setIsLoading(false);
-    
         }
     };
 

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { BASE_URL } from "@/lib/constants";
 
 export const POST = async (request: NextRequest) => {
-    /* TODO: Safely parse data with Zod */
     const body = await request.json();
+    
     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/signup`, {
         method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             email: body.email,
             password: body.password,
@@ -14,19 +16,26 @@ export const POST = async (request: NextRequest) => {
             ip: body.ip,
         }),
     });
+
+    const responseData = await response.json();
+
     if (response.status === 200) {
-        const data = await response.json();
-        cookies().set("auth_cookie", data.body.refresh_token);
-        return NextResponse.json({
-            status: 200,
-            message: data.body.message,
-        });
+        // Set cookie if needed
+        // cookies().set("auth_cookie", responseData.body.refresh_token);
+
+        return NextResponse.json(
+            {
+                message: "Successful Signup",
+            },
+            { status: 200 } // Explicitly set status
+        );
     } else {
-        const errorData = await response.json();
-        return NextResponse.json({
-            status: response.status,
-            message: errorData.message || "Signup failed", // send error message
-            error: errorData.error || "An error occurred during Signup", // detailed error message
-        });
+        return NextResponse.json(
+            {
+                message: responseData.message || "Signup failed",
+                error: responseData.error || "An error occurred during Signup",
+            },
+            { status: response.status } // Forward the exact status code from backend
+        );
     }
 };
