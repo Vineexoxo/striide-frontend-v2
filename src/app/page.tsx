@@ -9,7 +9,7 @@ import Wrapper from "@/components/Wrapper";
 //process.env.NEXT_PUBLIC_BACKEND_URL
 export default function Home() {
     const router = useRouter();
-
+    //test
     // useEffect(() => {
     //     async function checkSession() {
     //         const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/check_session`, {
