@@ -1,20 +1,35 @@
-# Use an official Node.js 18+ image as the base
-FROM node:18-alpine
+# Stage 1: Build the application
+FROM node:18-alpine AS builder
 
-# Step 2: Set the working directory in the container
+# Set working directory
 WORKDIR /usr/src/app
 
-# Step 3: Copy package.json and package-lock.json to the working directory
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Step 4: Install dependencies
-RUN npm install
+# Install dependencies
+RUN npm ci
 
-# Step 5: Copy the rest of the application files to the working directory
+# Copy the rest of the application
 COPY . .
 
-# Step 6: Expose port 3000
+# Build the Next.js app
+RUN npm run build
+
+# Stage 2: Create a minimal production image
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Copy only the necessary files from the builder stage
+COPY --from=builder /usr/src/app/package.json ./
+COPY --from=builder /usr/src/app/.next ./.next
+COPY --from=builder /usr/src/app/public ./public
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+
+# Expose port
 EXPOSE 3000
 
-# Step 7: Start the React app
-CMD ["npm", "run", "dev"]
+# Use production start command
+CMD ["npm", "run", "start"]
