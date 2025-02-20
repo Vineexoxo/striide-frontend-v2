@@ -6,65 +6,46 @@ import { Button } from "../Button";
 import Link from "next/link";
 import log from "@/logger";
 
-// Function to handle log message when "Sign Up" button is clicked
-const handleSignUpClick = () => {
-    // Log the event (send log to console and to your log server if necessary)
-  // log.info('Sign Up button clicked on the Welcome page');
-    
-
-    // // Optionally, you can send a log to your backend API (log server)
-    // fetch('http://localhost:4001/api/log', {
-    //     method: 'POST',
-    //     headers: {
-    //         'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({
-    //         message: 'Sign Up button clicked on the Welcome page',
-    //         level: 'info',
-    //         timestamp: new Date().toISOString(),
-    //     }),
-    // }).catch((error) => {
-    //     console.error('Failed to send log:', error);
-    // });
-};
+import Image from "next/image";
 
 
 const WelcomePage = () => {
     return (
-        <div className="relative z-10 flex h-full w-[90%] flex-col justify-evenly">
+        
+        <div className="relative z-10 w-full flex flex-col justify-evenly">
+      <div className="absolute top-0 left-0 w-full ">
+            <Image
+            src="/png2.svg"
+            alt="Striide for BITS GOA"
+            width={1920}     
+            height={1080}     
+            className="w-full h-auto" 
+        />
+      </div>
             <div className="flex h-fit w-full flex-col items-center gap-[82px]">
-                <div className="font-montserrat text-secondary-white flex w-full justify-center gap-[10px] text-[30px] font-bold">
-                    <motion.span
-                        initial={{
-                            opacity: 0,
-                            y: -50,
-                        }}
-                        animate={{
-                            opacity: 1,
-                            y: 0,
-                            transition: {
-                                duration: 1,
-                            },
-                        }}
-                    >
-                        Welcome to
-                    </motion.span>
-                    <motion.span
-                        initial={{
-                            opacity: 0,
-                        }}
-                        animate={{
-                            opacity: 1,
-                            transition: {
-                                duration: 1,
-                                delay: 0.5,
-                            },
-                        }}
-                        className="italic"
-                    >
-                        Striide
+                <div className=" text-secondary-white flex w-full justify-center gap-[10px] ">
+            
+                    <motion.div
+                initial={{ opacity: 0,x: 140, y: 170 }}
+                animate={{ opacity: 1, x: 140, y: 220, transition: { duration: 1, delay: 0.8 } }}
+                className="font-playfair text-secondary-white text-[40px]  text-center font-normal"
+            >
+                Striide
+            </motion.div>
+            <motion.div
+                initial={{ opacity: 0, y: 170 , x:35}}
+                animate={{ opacity: 1, y: 270, x:35, transition: { duration: 1, delay: 0.5 } }}
+                className="font-playfair text-secondary-white text-[30px] text-center font-thin"
 
-                    </motion.span>
+            >
+                <span className="font-poiret font-thin">for</span> BITS GOA
+            </motion.div>
+            <motion.div
+                initial={{ opacity: 0, y: 150 }}
+                animate={{ opacity: 1, y: 50, transition: { duration: 1, delay: 1 } }}
+                className="flex w-full flex-col items-center justify-center gap-[20px] pt-[50px]"
+            ></motion.div>
+
                 </div>
                 <motion.h2
                     initial={{ opacity: 0 }}
@@ -74,10 +55,7 @@ const WelcomePage = () => {
                     }}
                     className="font-nunito text-secondary-white w-[323px] pl-[5px] text-[20px] font-light leading-[28px]"
                 >
-                    Join us in building a connected and aware community where we
-                    look out for each other.
-                    <br /> <br /> Welcome to Version 1! It&apos;s not perfect,
-                    but with your help, we can make it amazing.
+
                 </motion.h2>
             </div>
             <motion.div
@@ -87,7 +65,7 @@ const WelcomePage = () => {
                 }}
                 animate={{
                     opacity: 1,
-                    y: 0,
+                    y: 80,
                     transition: {
                         duration: 1,
                         delay: 1,
@@ -98,8 +76,6 @@ const WelcomePage = () => {
                 <Link
                     href="/user/signup"
                     className="flex w-full items-center justify-center"
-                    onClick={handleSignUpClick}  // Add the log when button is clicked
-
                 >
                     <Button variant="secondary" size="full" className="w-[80%]">
                         Sign Up
