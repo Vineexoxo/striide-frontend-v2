@@ -20,7 +20,7 @@ const montserrat = Montserrat({
     variable: "--font-montserrat",
 });
 const nunito = Nunito_Sans({
-    weight: ["300", "400", "600", "700", "800"],
+    weight: ["200", "300", "400", "600", "700", "800", "900"],
     subsets: ["latin"],
     variable: "--font-nunito",
 });

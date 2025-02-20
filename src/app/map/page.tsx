@@ -1,469 +1,148 @@
 "use client";
 
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import MapProvider from "@/contexts/MapProvider";
 import Map from "@/components/Map";
-import { useSearchParams, useRouter } from 'next/navigation';
 import Reports from "@/components/reports/Reports";
-import { Feature, Suggestion } from "@/lib/types";
-import {
-    NavbarButton,
-    NavbarDropdownOptions,
-    NavbarRoot,
-    NavbarSearch,
-} from "@/components/navbar/UpdatedNavbar";
-import { Bell, Search, Settings, Menu, X } from "lucide-react";
-import { Button } from "@/components/Button";
-import { BASE_URL } from "@/lib/constants";
 import Geolocator from "@/components/Geolocator";
 import Link from "next/link";
-import log from "@/logger";
+import { X, Menu } from "lucide-react";
+import { Feature, Suggestion } from "@/lib/types";
+
 const MapOptions = {
     latitude: 42.362,
     longitude: -71.057,
     zoom: 17,
 };
 
-const debounce_time_factor = 500;
-// const debouncedSearch = async (searchVal: string, setSuggestionState: Dispatch<SetStateAction<Suggestion[]>>) => {
-//     useEffect(() => {
-//         const timeOut = setTimeout(async () => {
-//             if (!searchVal) {
-//                 return [];
-//             }
-
-//             const params = new URLSearchParams({
-//                 q: searchVal,
-//                 access_token: process.env.NEXT_PUBLIC_MAPBOX_TOKEN!,
-//                 session_token: process.env.NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN!
-//             });
-
-//             // todo: figure out the type of the promise
-//             const suggestions: any = await getMapboxSuggestions(params)
-//                 .then(val => val)
-//                 .catch(err => {
-//                     console.log(err);
-//                     return [];
-//                 });
-
-//             setSuggestionState(suggestions);
-//         }, debounce_time_factor);
-
-//         return () => clearTimeout(timeOut);
-//     }, [searchVal]);
-// }
-
-const getMapboxSuggestions = (
-    params: URLSearchParams,
-): Promise<Suggestion[]> => {
-    const url = `https://api.mapbox.com/search/searchbox/v1/suggest?${params.toString()}`;
-    // log.info("Fetching suggestions from Mapbox API", { url, params: params.toString() }); // Log the URL and params
-
-    return fetch(url, {
-        headers: {
-            method: "GET",
-            "Content-Type": "application/json",
-        },
-    })
-        .then((response) => {
-            // log.info("Received response from Mapbox API", {
-            //     status: response.status,
-            //     statusText: response.statusText,
-            // }); // Log the response status and text
-            return response.json();
-        })
-        .then((data) => {
-            // log.debug("Mapbox API response data", data); // Log the raw response data
-
-            let suggestions: Suggestion[] =
-                data?.suggestions.map((suggestion: Suggestion) => {
-                    return {
-                        name: suggestion.name ?? "",
-                        mapbox_id: suggestion.mapbox_id ?? "",
-                        full_address: suggestion.full_address,
-                    };
-                }) ?? [];
-
-            if (suggestions.length === 0) {
-                // log.warn("No suggestions found, returning default suggestion");
-                suggestions = [
-                    {
-                        name: "",
-                        mapbox_id: "",
-                        full_address: "",
-                    },
-                ];
-            }
-            // log.info("Suggestions returned", suggestions); // Log the final suggestions array
-            return suggestions;
-        })
-        .catch((err) => {
-            // log.error("Error fetching Mapbox suggestions", err); // Log any errors
-
-            throw new Error(err);
-        });
-};
-
-const getFeatures = async (
-    suggestion: string,
-    setFeatureState: Dispatch<SetStateAction<Feature>>,
-) => {
-    if (!suggestion) {
-        return;
-    }
-
-    const params = new URLSearchParams({
-        access_token: process.env.NEXT_PUBLIC_MAPBOX_TOKEN!,
-        session_token: process.env.NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN!,
-    });
-
-    let feature: any = await getMapboxFeatures(params, suggestion)
-        .then((data) => data)
-        .catch((err) => {
-            throw new Error(err);
-        });
-
-    setFeatureState({
-        geometry: {
-            coordinates: feature.features[0].geometry.coordinates,
-        },
-        properties: {
-            kind: feature.features[0].geometry.type,
-            full_address: feature.features[0].properties.full_address,
-        },
-    });
-};
-
-const FeedbackModal = ({ message }: { message: string }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#343540] backdrop-blur-sm">
-        <div className="w-[300px] h-[48px] px-4 py-2 rounded-[8px] flex items-center justify-center bg-[#1F19267A]">
-            <p className="font-nunito-sans text-[14px] font-normal leading-[22px] text-center text-white whitespace-nowrap">
-                {message}
-            </p>
-        </div>
-    </div>
-);
-
-const getMapboxFeatures = (params: URLSearchParams, id: string) => {
-    const url = `https://api.mapbox.com/search/searchbox/v1/retrieve/${id}?${params.toString()}`;
-    // log.info("Fetching mapbox features from URL:", url);
-
-
-    return fetch(url, {
-        headers: {
-            method: "GET",
-            "Content-Type": "application/json",
-        },
-    })
-    .then((res) => {
-        // Log response status
-        // log.info("Received response with status:", res.status);
-        return res.json();
-    })
-    .then((data) => {
-        // Log the data received from the API
-        // log.info("Mapbox features retrieved successfully:", data);
-        return data;
-    })
-    .catch((err) => {
-        // Log the error that occurred
-        // log.error("Error fetching mapbox features:", err);
-        throw new Error(err);
-    });
-
-};
-
 export default function MapPage() {
-    const router = useRouter();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [showModal, setShowModal] = useState(false);
-    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-    const [feedbackMessage, setFeedbackMessage] = useState('');
-    const searchParams = useSearchParams();
+    return (
+        <Suspense fallback={<p className="text-center text-white">Loading map...</p>}>
+            <MapPageContent />
+        </Suspense>
+    );
+}
 
+function MapPageContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+    const [reports, setReports] = useState([]);
+    const [queryPath, setQueryPath] = useState<number[][]>([]);
+    const [mapboxPath, setMapBoxPath] = useState<number[][]>([]);
+    const [userCoords, setUserCoords] = useState<number[]>([]);
+    const [customCoords, setCustomCoords] = useState<number[][]>([]);
+    const [geolocatorCoords, setGeolocatorCoords] = useState<number[]>([]);
+
+    let defaultFeature: Feature = {
+        geometry: { coordinates: [] },
+        properties: { kind: "", full_address: "" },
+    };
+
+    const [originFeature, setOriginFeature] = useState<Feature>(defaultFeature);
+    const [destinationFeature, setDestinationFeature] = useState<Feature>(defaultFeature);
+
+    /** ✅ Check User Authentication */
     useEffect(() => {
         const checkUserAuthentication = async () => {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/get-user`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" },
                 });
                 const data = await response.json();
-                if (!data.user || data.user.role !== 'authenticated') {
-                    router.push('/user/login');
+                if (!data.user || data.user.role !== "authenticated") {
+                    router.push("/user/login");
                 }
             } catch (error) {
-                console.error('Error checking user authentication:', error);
+                console.error("Error checking user authentication:", error);
             }
         };
-
         checkUserAuthentication();
     }, [router]);
 
-    const showFeedback = (message: string) => {
-        // log.info("Displaying feedback:", message); // Log feedback display
-
-        setFeedbackMessage(message);
-        setShowFeedbackModal(true);
-        const timer = setTimeout(() => {
-            setShowFeedbackModal(false);
-        }, 3500);
-
-        return () => clearTimeout(timer);
-    };
-
+    /** ✅ Fetch Reports */
     useEffect(() => {
-        if (searchParams.get('draft_saved') === 'true') {
-            showFeedback("Report saved as draft");
-        } else if (searchParams.get('marked') === 'true') {
-            showFeedback("Report marked on Striide map");
-        } else if (searchParams.get('draft_discarded') === 'true') {
-            showFeedback("Draft discarded");
-        } else if (searchParams.get('feedback') === 'success') {
-            showFeedback("Feedback submitted successfully");
+        const getReports = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/report_ids`);
+                        // Check if response is OK (status 200)
+                if (!res.ok) {
+                    const text = await res.text(); // Log response as text
+                    console.error("Error fetching reports:", res.status);
+                    return;
+                }
+                const data = await res.json();
+                setReports(data.body.reports);
+            } catch (error) {
+                console.error("Error fetching reports:", error);
+            }
+        };
+        getReports();
+    }, []);
+
+    /** ✅ Show Feedback Message */
+    useEffect(() => {
+        const messageMap: { [key: string]: string } = {
+            draft_saved: "Report saved as draft",
+            marked: "Report marked on Striide map",
+            draft_discarded: "Draft discarded",
+            feedback: "Feedback submitted successfully",
+        };
+
+        for (const key in messageMap) {
+            if (searchParams.get(key) === "true") {
+                setFeedbackMessage(messageMap[key]);
+                setTimeout(() => setFeedbackMessage(null), 3500);
+                break;
+            }
         }
     }, [searchParams]);
 
-
-    let default_feature: Feature = {
-        geometry: {
-            coordinates: [],
-        },
-        properties: {
-            kind: "",
-            full_address: "",
-        },
-    };
-
-    const [queryPath, setQueryPath] = useState<number[][]>([]);
-    const [mapboxPath, setMapBoxPath] = useState<number[][]>([]);
-    const [originSearchValue, setOriginSearchValue] = useState<string>("");
-    const [destinationSearchValue, setDestinationSearchValue] =
-        useState<string>("");
-    const [originFeature, setOriginFeature] =
-        useState<Feature>(default_feature);
-    const [destinationFeature, setDestinationFeature] =
-        useState<Feature>(default_feature);
-    const [originSuggestions, setOriginSuggestions] = useState<Suggestion[]>(
-        [],
-    );
-    const [destinationSuggestions, setDestinationSuggestions] = useState<
-        Suggestion[]
-    >([]);
-    const [userCoords, setUserCoords] = useState<number[]>([]);
-    const [customCoords, setCustomCoords] = useState<number[][]>([]);
-    const [geolocatorCoords, setGeolocatorCoords] = useState<number[]>([]);
-    const [reports, setReports] = useState([]);
-
-    // useEffect(() => {
-    //   // log.info("Fetching reports..."); // Log when reports are being fetched
-
-    //     const get_reports = async () => {
-    //         fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/report_ids`).then((res) => {
-    //             res.json().then((data) => {
-    //                 setReports(data.body.reports);
-    //             });
-    //         });
-    //     };
-    //     get_reports();
-    // }, []);
-
+    /** ✅ Fetch Route from Backend */
     useEffect(() => {
-        // log.info("Fetching reports..."); // Log when reports are being fetched
-        const get_reports = async () => {
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/report_ids`);
-                const data = await res.json();
-                setReports(data.body.reports);
-                // log.info("Fetched reports successfully:", data.body.reports); // Log successful data fetch
-            } catch (error) {
-                // log.error("Error fetching reports:", error); // Log error if fetching fails
-            }
-        };
-        get_reports();
-    }, []);
-
-    // debouncedSearch(originSearchValue, setOriginSuggestions);
-    // debouncedSearch(destinationSearchValue, setDestinationSuggestions);
-
-    useEffect(() => {
-        const timeOut = setTimeout(async () => {
-            if (!originSearchValue) {
-                return [];
-            }
-
-            const params = new URLSearchParams({
-                q: originSearchValue,
-                access_token: process.env.NEXT_PUBLIC_MAPBOX_TOKEN!,
-                session_token:
-                    process.env.NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN!,
-            });
-
-            // todo: figure out the type of the promise
-            try{
-                // log.info("Fetching Mapbox suggestions for:", originSearchValue);
-
-                const suggestions: any = await getMapboxSuggestions(params)
-                    .then((val) => val)
-                    .catch((err) => {
-                        console.log(err);
-                        return [];
-                    });
-                    setOriginSuggestions(suggestions);
-                }catch(err){
-                    // log.error("Error fetching Mapbox suggestions:", err);
-                    setOriginSuggestions([]); // Set empty list on error
-                }
-
-            
-        }, debounce_time_factor);
-
-        return () => clearTimeout(timeOut);
-    }, [originSearchValue]);
-
-    useEffect(() => {
-        const timeOut = setTimeout(async () => {
-            if (!destinationSearchValue) {
-                return [];
-            }
-
-            const params = new URLSearchParams({
-                q: destinationSearchValue,
-                access_token: process.env.NEXT_PUBLIC_MAPBOX_TOKEN!,
-                session_token:
-                    process.env.NEXT_PUBLIC_SEARCH_API_SESSION_TOKEN!,
-            });
-
-            // todo: figure out the type of the promise
-            const suggestions: any = await getMapboxSuggestions(params)
-                .then((val) => val)
-                .catch((err) => {
-                    console.log(err);
-                    return [];
-                });
-
-            setDestinationSuggestions(suggestions);
-        }, debounce_time_factor);
-
-        return () => clearTimeout(timeOut);
-    }, [destinationSearchValue]);
-
-    /**
-     *  bottom use effect is only used for testing
-     *  todo: eventually phase out the code after testing
-     */
-    useEffect(() => {
-        if (!customCoords || customCoords.length < 2) {
-            return;
-        }
-
-        console.log(customCoords);
+        if (!customCoords || customCoords.length < 2) return;
 
         fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/query_route`, {
             method: "POST",
-            headers: {
-                Accept: "*/*",
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                origin: customCoords[0],
-                destination: customCoords[1],
-            }),
+            headers: { Accept: "*/*", "Content-Type": "application/json" },
+            body: JSON.stringify({ origin: customCoords[0], destination: customCoords[1] }),
         })
             .then((response) => response.json())
             .then((data) => {
-                if (!data) {
-                    throw new Error("BACKEND DID NOT RETURN ANYTHING");
+                if (data?.status === 200) {
+                    setQueryPath(data.body.striide_route);
+                } else {
+                    throw new Error("Invalid backend response");
                 }
-                if (data.status !== 200) {
-                    throw new Error(
-                        "BACKEND RETURNED A STATUS THAT WAS NOT 200",
-                    );
-                }
-                setQueryPath(data.body.striide_route);
-                setCustomCoords([]);
             })
-            .catch((err) => {
-                console.log(err);
-                throw new Error("SOMETHING WENT WRONG - QUERYING BACKEND", err);
-            });
+            .catch((err) => console.error("Error querying backend:", err));
 
-        // const origin = customCoords[0];
+        setCustomCoords([]);
     }, [customCoords]);
 
+    /** ✅ Fetch Walking Directions from Mapbox */
     useEffect(() => {
-        if (!originFeature || !destinationFeature) {
-            return;
-        }
+        if (!originFeature.geometry.coordinates.length || !destinationFeature.geometry.coordinates.length) return;
 
         const userCoords = originFeature.geometry.coordinates;
         const destinationCoords = destinationFeature.geometry.coordinates;
 
-        if (userCoords === undefined || destinationCoords === undefined) {
-            return;
-        }
-
-        if (userCoords.length != 2 || destinationCoords.length != 2) {
-            return;
-        }
-
         fetch(
-            `https://api.mapbox.com/directions/v5/mapbox/walking/${userCoords[0]}%2C${userCoords[1]}%3B${destinationCoords[0]}%2C${destinationCoords[1]}?alternatives=true&continue_straight=true&geometries=geojson&language=en&overview=full&steps=true&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN!}`,
-            {
-                method: "GET",
-                headers: {
-                    Accept: "*/*",
-                    "Content-Type": "application/json",
-                },
-            },
+            `https://api.mapbox.com/directions/v5/mapbox/walking/${userCoords[0]},${userCoords[1]};${destinationCoords[0]},${destinationCoords[1]}?alternatives=true&geometries=geojson&overview=full&access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`,
+            { method: "GET", headers: { Accept: "*/*", "Content-Type": "application/json" } }
         )
             .then((res) => res.json())
-            .then((data) => {
-                let coordinates = data.routes[0].geometry.coordinates;
-                setMapBoxPath(coordinates);
-            })
-            .catch((err) => {
-                console.log(err);
-                throw new Error(
-                    "Something went wrong getting mapbox suggestion",
-                );
-            });
-
-        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/query_route`, {
-            method: "POST",
-            headers: {
-                Accept: "*/*",
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                origin: userCoords,
-                destination: destinationCoords,
-            }),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (!data) {
-                    throw new Error("BACKEND DID NOT RETURN ANYTHING");
-                }
-                if (data.status !== 200) {
-                    throw new Error(
-                        "BACKEND RETURNED A STATUS THAT WAS NOT 200",
-                    );
-                }
-                setQueryPath(data.body.striide_route);
-            })
-            .catch((err) => {
-                console.log(err);
-                throw new Error("SOMETHING WENT WRONG - QUERYING BACKEND", err);
-            });
+            .then((data) => setMapBoxPath(data.routes[0]?.geometry.coordinates || []))
+            .catch((err) => console.error("Error fetching Mapbox suggestions:", err));
     }, [originFeature, destinationFeature]);
 
     return (
         <main className="relative h-full w-full">
             <MapProvider>
-                {/* Hamburger Menu Icon */}
+                {/* Hamburger Menu */}
                 <div className="absolute top-4 right-4 z-30">
                     <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white">
                         {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -471,39 +150,37 @@ export default function MapPage() {
                 </div>
 
                 {/* Dropdown Menu */}
-                <div className={`fixed top-0 left-0 w-full h-[35%] z-20 bg-white bg-opacity-20 backdrop-blur-lg transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-y-0' : '-translate-y-[110%]'}`}>
+                <div className={`fixed top-0 left-0 w-full h-[35%] z-20 bg-white bg-opacity-20 backdrop-blur-lg transition-transform duration-300 ease-in-out ${isMenuOpen ? "translate-y-0" : "-translate-y-[110%]"}`}>
                     <div className="p-4 pt-16 space-y-4 flex flex-col items-center justify-center h-full">
-                        <Link href="/angels" className="block text-white hover:text-gray-200 text-lg py-2 text-center w-full">
-                            Angels
-                        </Link>
-                        <Link href="/drafts" className="block text-white hover:text-gray-200 text-lg py-2 text-center w-full">
-                            Saved Drafts
-                        </Link>
-                        <a
-                            href="https://drive.google.com/file/d/10pFz5xM8TOq-OoxAtPsY2sQwAcGxOTDL/view?usp=sharing"
-                            className="block text-white hover:text-gray-200 text-lg py-2 text-center w-full"
-                            target="_blank"  // Opens the link in a new tab
-                            rel="noopener noreferrer"  // Improves security
-                        >
-                            Terms and Conditions
-                        </a>
+                        <Link href="/angels" className="block text-white text-lg">Angels</Link>
+                        <Link href="/drafts" className="block text-white text-lg">Saved Drafts</Link>
+                        <a href="https://drive.google.com/file/d/10pFz5xM8TOq-OoxAtPsY2sQwAcGxOTDL/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="block text-white text-lg">Terms and Conditions</a>
                     </div>
                 </div>
 
-                {/* Semi-transparent overlay when menu is open */}
-                {isMenuOpen && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 z-10"></div>
-                )}
-
-                <div className={`absolute top-4 left-4 z-20 font-inter`}>
-                    <span className="font-bold italic text-[20px] leading-[24.2px] text-center text-white">
-                        Striide
-                    </span>
+                {/* App Header */}
+                <div className="absolute top-4 left-4 z-20 font-inter">
+                    <span className="font-bold italic text-[20px] text-white">Striide</span>
                 </div>
+
+                {/* Display Reports */}
                 <Reports reports={reports} />
-                {/*filter: drop-shadow(4px 4px 4px rgba(31, 25, 38, 0.30)) drop-shadow(-4px -4px 4px rgba(0, 0, 0, 0.25));*/}
+
+                {/* Display Maps */}
+                <Map options={MapOptions} mapboxPath={mapboxPath} queryPath={queryPath} setUserCoords={setUserCoords} setCustomCoords={setCustomCoords} markerCoords={geolocatorCoords} />
+                <Geolocator geolocatorCoords={geolocatorCoords} setGeolocatorCoords={setGeolocatorCoords} queryPath={mapboxPath} />
+
+                {/* Feedback Message Modal */}
+                {feedbackMessage && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
+                        <div className="bg-white px-4 py-2 rounded-md">
+                            <p className="text-black">{feedbackMessage}</p>
+                        </div>
+                    </div>
+                )}
+                
                 <div className="absolute -right-0 bottom-[168px] z-10 flex h-[144px] w-[80px] flex-col items-center justify-evenly rounded-l-[24px] bg-[#9f9f9f] bg-opacity-10 backdrop-blur-[20px] [filter:drop-shadow(4px_4px_4px_rgba(31,_25,_38,_0.30))_drop-shadow(-4px_-4px_4px_rgba(0,_0,_0,_0.25))]">
-                    <Link
+                     <Link
                         className="bg-primary-purple flex h-[44px] w-[44px] items-center justify-center rounded-[12px]"
                         href={"/feedback"}
                     >
@@ -543,91 +220,8 @@ export default function MapPage() {
                         </svg>
                     </Link>
                 </div>
-                {/* <div className="absolute left-0 right-0 top-2 z-10 flex flex-col items-center justify-start gap-y-10 py-12">
-                    <NavbarRoot className="relative">
-                        <div className="flex h-auto items-center justify-center gap-x-3">
-                            <NavbarButton className="border border-black bg-white p-1">
-                                <Settings className="h-5 w-5" />
-                            </NavbarButton>
-                            <div className="relative flex flex-col gap-y-2">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-2 h-4 w-4" />
-                                    <NavbarSearch
-                                        placeholder="Origin"
-                                        onChange={(e) =>
-                                            setOriginSearchValue(e.target.value)
-                                        }
-                                    />
-                                </div>
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-2 h-4 w-4" />
-                                    <NavbarSearch
-                                        placeholder="Destination"
-                                        onChange={(e) =>
-                                            setDestinationSearchValue(
-                                                e.target.value,
-                                            )
-                                        }
-                                    />
-                                </div>
-                            </div>
-                            <NavbarButton className="border border-black bg-white p-1">
-                                <Bell className="h-5 w-5" />
-                            </NavbarButton>
-                        </div>
-                        <div className="grid h-full w-full grid-flow-row">
-                            <NavbarDropdownOptions
-                                className="top-8"
-                                suggestions={originSuggestions}
-                                onClick={(e) => {
-                                    getFeatures(
-                                        (e as any).mapbox_id,
-                                        setOriginFeature,
-                                    );
-                                    setOriginSearchValue("");
-                                }}
-                                isOpen={originSearchValue.length !== 0}
-                            />
-                            <NavbarDropdownOptions
-                                className="top-[4.5rem]"
-                                suggestions={destinationSuggestions}
-                                onClick={(e) => {
-                                    getFeatures(
-                                        (e as any).mapbox_id,
-                                        setDestinationFeature,
-                                    );
-                                    setDestinationSearchValue("");
-                                }}
-                                isOpen={destinationSearchValue.length !== 0}
-                            />
-                        </div>
-                    </NavbarRoot>
-                </div> */}
 
-                {showFeedbackModal && <FeedbackModal message={feedbackMessage} />}
-
-
-                <Map
-                    options={MapOptions}
-                    mapboxPath={mapboxPath}
-                    queryPath={queryPath}
-                    setUserCoords={setUserCoords}
-                    setCustomCoords={setCustomCoords}
-                    markerCoords={geolocatorCoords}
-                />
-                <Map
-                    options={MapOptions}
-                    mapboxPath={mapboxPath}
-                    queryPath={queryPath}
-                    setUserCoords={setUserCoords}
-                    setCustomCoords={setCustomCoords}
-                />
-                <Geolocator
-                    className="absolute bottom-[370px] right-[20px] z-10"
-                    geolocatorCoords={geolocatorCoords}
-                    setGeolocatorCoords={setGeolocatorCoords}
-                    queryPath={mapboxPath}
-                />
+                
             </MapProvider>
         </main>
     );
