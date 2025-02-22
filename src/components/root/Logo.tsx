@@ -28,9 +28,12 @@ const LogoScreen = ({ children, exit, animate }: LogoScreenProps) => {
                     key="Logo"
                     initial={{
                         opacity: 0,
+                        y:0,
                     }}
                     animate={{
                         opacity: 1,
+                        y: 70,
+
                         transition: {
                             duration: 1,
                             delay: 0.5,

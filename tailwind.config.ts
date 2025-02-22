@@ -27,6 +27,8 @@ const config: Config = {
                     "linear-gradient(197deg, #802EE8 8.26%, #5044F1 52.4%);",
             },
             fontFamily: {
+                playfair: ["Playfair Display", "serif"],
+                poiret: ["Poiret One", "cursive"],
                 montserrat: ["var(--font-montserrat)"],
                 inter: ["var(--font-inter)"],
                 mulish: ["var(--font-mulish)"],

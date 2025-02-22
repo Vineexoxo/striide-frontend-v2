@@ -9,6 +9,12 @@
 .mapboxgl-ctrl-logo {
     display: none !important;
 }
+@import url('https://fonts.googleapis.com/css2?family=Poiret+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+.font-poiret {
+    font-weight: 200 !important;
+}
+
 
 .date-input::-webkit-calendar-picker-indicator {
     opacity: 0;
